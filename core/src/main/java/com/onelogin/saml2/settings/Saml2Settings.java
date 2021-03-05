@@ -13,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+
+import com.onelogin.saml2.model.AttributeConsumingService;
 import com.onelogin.saml2.model.Contact;
 import com.onelogin.saml2.model.Organization;
 import com.onelogin.saml2.util.Constants;
@@ -45,6 +47,7 @@ public class Saml2Settings {
 	private X509Certificate spX509certNew = null;
 	private PrivateKey spPrivateKey = null;
 	private HSM hsm = null;
+	private List<AttributeConsumingService> spAttributeConsumingServices = new ArrayList<>();
 
 	// IdP
 	private String idpEntityId = "";
@@ -117,6 +120,13 @@ public class Saml2Settings {
 		return spAssertionConsumerServiceBinding;
 	}
 
+	/**
+	 * @return the SP Attribute Consuming Services 
+	 */
+	public final List<AttributeConsumingService> getSpAttributeConsumingServices() {
+		  return spAttributeConsumingServices;
+	}
+	
 	/**
 	 * @return the spSingleLogoutServiceUrl setting value
 	 */
@@ -844,6 +854,17 @@ public class Saml2Settings {
 		return compressResponse;
 	}
 
+	/**
+	 * Set the Attribute Consuming Services to be declared in the Service Provider
+	 * metadata
+	 * 
+	 * @param spAttributeConsumingServices
+	 *              the Attribute Consuming Services to set
+	 */
+	protected final void setSpAttributeConsumingServices(List<AttributeConsumingService> spAttributeConsumingServices) {
+		this.spAttributeConsumingServices = spAttributeConsumingServices;
+	}
+	
 	/**
 	 * Set contacts info that will be listed on the Service Provider metadata
 	 * 

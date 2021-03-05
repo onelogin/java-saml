@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.onelogin.saml2.authn.AuthnRequest;
+import com.onelogin.saml2.authn.AuthnRequestParams;
 import com.onelogin.saml2.authn.SamlResponse;
 import com.onelogin.saml2.exception.SettingsException;
 import com.onelogin.saml2.exception.Error;
@@ -310,63 +311,232 @@ public class Auth {
 	/**
 	 * Initiates the SSO process.
 	 *
-	 * @param returnTo        The target URL the user should be returned to after
-	 *                        login (relayState). Will be a self-routed URL when
-	 *                        null, or not be appended at all when an empty string
-	 *                        is provided
-	 * @param forceAuthn      When true the AuthNRequest will set the
-	 *                        ForceAuthn='true'
-	 * @param isPassive       When true the AuthNRequest will set the
-	 *                        IsPassive='true'
-	 * @param setNameIdPolicy When true the AuthNRequest will set a nameIdPolicy
-	 * @param stay            True if we want to stay (returns the url string) False
-	 *                        to execute redirection
-	 * @param nameIdValueReq  Indicates to the IdP the subject that should be
-	 *                        authenticated
+	 * @param returnTo
+	 *              The target URL the user should be returned to after login
+	 *              (relayState). Will be a self-routed URL when null, or not be
+	 *              appended at all when an empty string is provided
+	 * @param forceAuthn
+	 *              When true the AuthNRequest will set the ForceAuthn='true'
+	 * @param isPassive
+	 *              When true the AuthNRequest will set the IsPassive='true'
+	 * @param setNameIdPolicy
+	 *              When true the AuthNRequest will set a nameIdPolicy
+	 * @param stay
+	 *              True if we want to stay (returns the url string) False to
+	 *              execute redirection
+	 * @param nameIdValueReq
+	 *              Indicates to the IdP the subject that should be authenticated
 	 *
 	 * @return the SSO URL with the AuthNRequest if stay = True
 	 *
 	 * @throws IOException
 	 * @throws SettingsException
+	 * @deprecated use {@link #login(String, AuthnRequestParams, Boolean)} with
+	 *             {@link AuthnRequestParams#AuthnRequestParams(boolean, boolean, boolean, String)}
+	 *             instead
 	 */
+	@Deprecated
 	public String login(String returnTo, Boolean forceAuthn, Boolean isPassive, Boolean setNameIdPolicy, Boolean stay,
 			String nameIdValueReq) throws IOException, SettingsException {
 		Map<String, String> parameters = new HashMap<String, String>();
-		return login(returnTo, forceAuthn, isPassive, setNameIdPolicy, stay,
-				nameIdValueReq, parameters);
+		return login(returnTo, new AuthnRequestParams(forceAuthn, isPassive, setNameIdPolicy, nameIdValueReq), stay,
+		            parameters);
 	}
 
 	/**
 	 * Initiates the SSO process.
 	 *
-	 * @param returnTo        The target URL the user should be returned to after
-	 *                        login (relayState). Will be a self-routed URL when
-	 *                        null, or not be appended at all when an empty string
-	 *                        is provided
-	 * @param forceAuthn      When true the AuthNRequest will set the
-	 *                        ForceAuthn='true'
-	 * @param isPassive       When true the AuthNRequest will set the
-	 *                        IsPassive='true'
-	 * @param setNameIdPolicy When true the AuthNRequest will set a nameIdPolicy
-	 * @param stay            True if we want to stay (returns the url string) False
-	 *                        to execute redirection
-	 * @param nameIdValueReq  Indicates to the IdP the subject that should be
-	 *                        authenticated
-	 * @param parameters      Use it to send extra parameters in addition to the AuthNRequest
+	 * @param returnTo
+	 *              The target URL the user should be returned to after login
+	 *              (relayState). Will be a self-routed URL when null, or not be
+	 *              appended at all when an empty string is provided
+	 * @param forceAuthn
+	 *              When true the AuthNRequest will set the ForceAuthn='true'
+	 * @param isPassive
+	 *              When true the AuthNRequest will set the IsPassive='true'
+	 * @param setNameIdPolicy
+	 *              When true the AuthNRequest will set a nameIdPolicy
+	 * @param stay
+	 *              True if we want to stay (returns the url string) False to
+	 *              execute redirection
+	 * @param nameIdValueReq
+	 *              Indicates to the IdP the subject that should be authenticated
+	 * @param parameters
+	 *              Use it to send extra parameters in addition to the AuthNRequest
+	 *
+	 * @return the SSO URL with the AuthNRequest if stay = True
+	 *
+	 * @throws IOException
+	 * @throws SettingsException
+	 * @deprecated use {@link #login(String, AuthnRequestParams, Boolean, Map)} with
+	 *             {@link AuthnRequestParams#AuthnRequestParams(boolean, boolean, boolean, String)}
+	 *             instead
+	 */
+	@Deprecated
+	public String login(String returnTo, Boolean forceAuthn, Boolean isPassive, Boolean setNameIdPolicy, Boolean stay,
+			String nameIdValueReq, Map<String, String> parameters) throws IOException, SettingsException {
+		return login(returnTo, new AuthnRequestParams(forceAuthn, isPassive, setNameIdPolicy, nameIdValueReq), stay,
+		            parameters);
+	}
+
+	/**
+	 * Initiates the SSO process.
+	 *
+	 * @param returnTo
+	 *              The target URL the user should be returned to after login
+	 *              (relayState). Will be a self-routed URL when null, or not be
+	 *              appended at all when an empty string is provided
+	 * @param forceAuthn
+	 *              When true the AuthNRequest will set the ForceAuthn='true'
+	 * @param isPassive
+	 *              When true the AuthNRequest will set the IsPassive='true'
+	 * @param setNameIdPolicy
+	 *              When true the AuthNRequest will set a nameIdPolicy
+	 * @param stay
+	 *              True if we want to stay (returns the url string) False to
+	 *              execute redirection
+	 *
+	 * @return the SSO URL with the AuthNRequest if stay = True
+	 *
+	 * @throws IOException
+	 * @throws SettingsException
+	 * @deprecated use {@link #login(String, AuthnRequestParams, Boolean)} with
+	 *             {@link AuthnRequestParams#AuthnRequestParams(boolean, boolean, boolean)}
+	 *             instead
+	 */
+	@Deprecated
+	public String login(String returnTo, Boolean forceAuthn, Boolean isPassive, Boolean setNameIdPolicy, Boolean stay)
+			throws IOException, SettingsException {
+		return login(returnTo, new AuthnRequestParams(forceAuthn, isPassive, setNameIdPolicy), stay, null);
+	}
+
+	/**
+	 * Initiates the SSO process.
+	 *
+	 * @param returnTo
+	 *              The target URL the user should be returned to after login
+	 *              (relayState). Will be a self-routed URL when null, or not be
+	 *              appended at all when an empty string is provided
+	 * @param forceAuthn
+	 *              When true the AuthNRequest will set the ForceAuthn='true'
+	 * @param isPassive
+	 *              When true the AuthNRequest will set the IsPassive='true'
+	 * @param setNameIdPolicy
+	 *              When true the AuthNRequest will set a nameIdPolicy
+	 *
+	 * @throws IOException
+	 * @throws SettingsException
+	 * @deprecated use {@link #login(String, AuthnRequestParams)} with
+	 *             {@link AuthnRequestParams#AuthnRequestParams(boolean, boolean, boolean)}
+	 *             instead
+	 */
+	@Deprecated
+	public void login(String returnTo, Boolean forceAuthn, Boolean isPassive, Boolean setNameIdPolicy)
+			throws IOException, SettingsException {
+		login(returnTo, new AuthnRequestParams(forceAuthn, isPassive, setNameIdPolicy), false);
+	}
+
+	/**
+	 * Initiates the SSO process.
+	 *
+	 * @throws IOException
+	 * @throws SettingsException
+	 */
+	public void login() throws IOException, SettingsException {
+		login(null, new AuthnRequestParams(false, false, true));
+	}
+
+	/**
+	 * Initiates the SSO process.
+	 *
+	 * @param authnRequestParams
+	 *              the authentication request input parameters
+	 *
+	 * @throws IOException
+	 * @throws SettingsException
+	 */
+	public void login(AuthnRequestParams authnRequestParams) throws IOException, SettingsException {
+		login(null, authnRequestParams);
+	}
+
+	/**
+	 * Initiates the SSO process.
+	 *
+	 * @param returnTo The target URL the user should be returned to after login
+	 *                 (relayState). Will be a self-routed URL when null, or not be
+	 *                 appended at all when an empty string is provided.
+	 *
+	 * @throws IOException
+	 * @throws SettingsException
+	 */
+	public void login(String returnTo) throws IOException, SettingsException {
+		login(returnTo, new AuthnRequestParams(false, false, true));
+	}
+
+	/**
+	 * Initiates the SSO process.
+	 *
+	 * @param returnTo
+	 *              The target URL the user should be returned to after login
+	 *              (relayState). Will be a self-routed URL when null, or not be
+	 *              appended at all when an empty string is provided
+	 * @param authnRequestParams
+	 *              the authentication request input parameters
+	 *
+	 * @throws IOException
+	 * @throws SettingsException
+	 */
+	public void login(String returnTo, AuthnRequestParams authnRequestParams) throws IOException, SettingsException {
+		login(returnTo, authnRequestParams, false);
+	}
+
+	/**
+	 * Initiates the SSO process.
+	 *
+	 * @param returnTo
+	 *              The target URL the user should be returned to after login
+	 *              (relayState). Will be a self-routed URL when null, or not be
+	 *              appended at all when an empty string is provided
+	 * @param authnRequestParams
+	 *              the authentication request input parameters
+	 * @param stay
+	 *              True if we want to stay (returns the url string) False to
+	 *              execute redirection
 	 *
 	 * @return the SSO URL with the AuthNRequest if stay = True
 	 *
 	 * @throws IOException
 	 * @throws SettingsException
 	 */
-	public String login(String returnTo, Boolean forceAuthn, Boolean isPassive, Boolean setNameIdPolicy, Boolean stay,
-			String nameIdValueReq, Map<String, String> parameters) throws IOException, SettingsException {
-		AuthnRequest authnRequest = new AuthnRequest(settings, forceAuthn, isPassive, setNameIdPolicy, nameIdValueReq);
+	public String login(String returnTo, AuthnRequestParams authnRequestParams, Boolean stay) throws IOException, SettingsException {
+		return login(returnTo, authnRequestParams, stay, new HashMap<>());
+	}
 
+	/**
+	 * Initiates the SSO process.
+	 *
+	 * @param returnTo
+	 *              The target URL the user should be returned to after login
+	 *              (relayState). Will be a self-routed URL when null, or not be
+	 *              appended at all when an empty string is provided
+	 * @param authnRequestParams
+	 *              the authentication request input parameters
+	 * @param stay
+	 *              True if we want to stay (returns the url string) False to
+	 *              execute redirection
+	 * @param parameters
+	 *              Use it to send extra parameters in addition to the AuthNRequest
+	 *
+	 * @return the SSO URL with the AuthNRequest if stay = True
+	 *
+	 * @throws IOException
+	 * @throws SettingsException
+	 */
+	public String login(String returnTo, AuthnRequestParams authnRequestParams, Boolean stay, Map<String, String> parameters) throws IOException, SettingsException {
 		if (parameters == null) {
 			parameters = new HashMap<String, String>();
 		}
-
+		AuthnRequest authnRequest = new AuthnRequest(settings, authnRequestParams);
 		String samlRequest = authnRequest.getEncodedAuthnRequest();
 
 		parameters.put("SAMLRequest", samlRequest);
@@ -398,76 +568,6 @@ public class Auth {
 			LOGGER.debug("AuthNRequest sent to " + ssoUrl + " --> " + samlRequest);
 		}
 		return ServletUtils.sendRedirect(response, ssoUrl, parameters, stay);
-	}
-
-	/**
-	 * Initiates the SSO process.
-	 *
-	 * @param returnTo        The target URL the user should be returned to after
-	 *                        login (relayState). Will be a self-routed URL when
-	 *                        null, or not be appended at all when an empty string
-	 *                        is provided
-	 * @param forceAuthn      When true the AuthNRequest will set the
-	 *                        ForceAuthn='true'
-	 * @param isPassive       When true the AuthNRequest will set the
-	 *                        IsPassive='true'
-	 * @param setNameIdPolicy When true the AuthNRequest will set a nameIdPolicy
-	 * @param stay            True if we want to stay (returns the url string) False
-	 *                        to execute redirection
-	 *
-	 * @return the SSO URL with the AuthNRequest if stay = True
-	 *
-	 * @throws IOException
-	 * @throws SettingsException
-	 */
-	public String login(String returnTo, Boolean forceAuthn, Boolean isPassive, Boolean setNameIdPolicy, Boolean stay)
-			throws IOException, SettingsException {
-		return login(returnTo, forceAuthn, isPassive, setNameIdPolicy, stay, null);
-	}
-
-	/**
-	 * Initiates the SSO process.
-	 *
-	 * @param returnTo        The target URL the user should be returned to after
-	 *                        login (relayState). Will be a self-routed URL when
-	 *                        null, or not be appended at all when an empty string
-	 *                        is provided
-	 * @param forceAuthn      When true the AuthNRequest will set the
-	 *                        ForceAuthn='true'
-	 * @param isPassive       When true the AuthNRequest will set the
-	 *                        IsPassive='true'
-	 * @param setNameIdPolicy When true the AuthNRequest will set a nameIdPolicy
-	 *
-	 * @throws IOException
-	 * @throws SettingsException
-	 */
-	public void login(String returnTo, Boolean forceAuthn, Boolean isPassive, Boolean setNameIdPolicy)
-			throws IOException, SettingsException {
-		login(returnTo, forceAuthn, isPassive, setNameIdPolicy, false);
-	}
-
-	/**
-	 * Initiates the SSO process.
-	 *
-	 * @throws IOException
-	 * @throws SettingsException
-	 */
-	public void login() throws IOException, SettingsException {
-		login(null, false, false, true);
-	}
-
-	/**
-	 * Initiates the SSO process.
-	 *
-	 * @param returnTo The target URL the user should be returned to after login
-	 *                 (relayState). Will be a self-routed URL when null, or not be
-	 *                 appended at all when an empty string is provided.
-	 *
-	 * @throws IOException
-	 * @throws SettingsException
-	 */
-	public void login(String returnTo) throws IOException, SettingsException {
-		login(returnTo, false, false, true);
 	}
 
 	/**

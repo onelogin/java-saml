@@ -15,18 +15,30 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Properties;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.onelogin.saml2.exception.Error;
+import com.onelogin.saml2.model.AttributeConsumingService;
 import com.onelogin.saml2.model.Contact;
 import com.onelogin.saml2.model.KeyStoreSettings;
 import com.onelogin.saml2.model.Organization;
+import com.onelogin.saml2.model.RequestedAttribute;
 import com.onelogin.saml2.util.Util;
 
 /**
@@ -64,6 +76,19 @@ public class SettingsBuilder {
 	public final static String SP_X509CERT_PROPERTY_KEY = "onelogin.saml2.sp.x509cert";
 	public final static String SP_PRIVATEKEY_PROPERTY_KEY = "onelogin.saml2.sp.privatekey";
 	public final static String SP_X509CERTNEW_PROPERTY_KEY = "onelogin.saml2.sp.x509certNew";
+
+	public final static String SP_ATTRIBUTE_CONSUMING_SERVICE_PROPERTY_KEY_PREFIX = "onelogin.saml2.sp.attribute_consuming_service";
+	public final static String SP_ATTRIBUTE_CONSUMING_SERVICE_NAME_PROPERTY_KEY_SUFFIX = "name";
+	public final static String SP_ATTRIBUTE_CONSUMING_SERVICE_DESCRIPTION_PROPERTY_KEY_SUFFIX = "description";
+	public final static String SP_ATTRIBUTE_CONSUMING_SERVICE_LANG_PROPERTY_KEY_SUFFIX = "lang";
+	public final static String SP_ATTRIBUTE_CONSUMING_SERVICE_DEFAULT_PROPERTY_KEY_SUFFIX = "default";
+	
+	public final static String SP_ATTRIBUTE_CONSUMING_SERVICE_ATTRIBUTE_PROPERTY_KEY_PREFIX = "attribute";
+	public final static String SP_ATTRIBUTE_CONSUMING_SERVICE_ATTRIBUTE_NAME_PROPERTY_KEY_SUFFIX = "name";
+	public final static String SP_ATTRIBUTE_CONSUMING_SERVICE_ATTRIBUTE_NAME_FORMAT_PROPERTY_KEY_SUFFIX = "name_format";
+	public final static String SP_ATTRIBUTE_CONSUMING_SERVICE_ATTRIBUTE_FRIENDLY_NAME_PROPERTY_KEY_SUFFIX = "friendly_name";
+	public final static String SP_ATTRIBUTE_CONSUMING_SERVICE_ATTRIBUTE_REQUIRED_PROPERTY_KEY_SUFFIX = "required";
+	public final static String SP_ATTRIBUTE_CONSUMING_SERVICE_ATTRIBUTE_VALUE_PROPERTY_KEY_PREFIX = "value";
 
 	// KeyStore
 	public final static String KEYSTORE_KEY = "onelogin.saml2.keystore.store";
@@ -466,7 +491,204 @@ public class SettingsBuilder {
 
 		return contacts;
 	}
+	
+	/**
+	 * Loads the Attribute Consuming Services from settings.
+	 * 
+	 * @return a list containing the loaded Attribute Consuming Services
+	 */
+	private List<AttributeConsumingService> loadAttributeConsumingServices() {
+		// first split properties into a map of properties
+		// key = ACS index; value = ACS properties
+		final SortedMap<Integer, Map<String, Object>> acsProps = 
+				extractIndexedProperties(SP_ATTRIBUTE_CONSUMING_SERVICE_PROPERTY_KEY_PREFIX, samlData);
+		// then build each ACS
+		if(acsProps.containsKey(-1) && acsProps.size() == 1)
+			// single ACS specified; use index 1 for backward compatibility
+			return Arrays.asList(loadAttributeConsumingService(acsProps.get(-1), 1));
+		else
+			// multiple indexed ACSs specified
+			return acsProps.entrySet().stream()
+					// ignore non-indexed ACS
+					.filter(entry -> entry.getKey() != -1)
+			            .map(entry -> loadAttributeConsumingService(entry.getValue(), entry.getKey()))
+			            .collect(Collectors.toList());
+	}
+	
+	/**
+	 * Loads a single Attribute Consuming Service from settings.
+	 * 
+	 * @param acsProps
+	 *              a map containing the ACS settings
+	 * @param index
+	 *              the index to be set on the returned ACS
+	 * @return the loaded ACS
+	 */
+	private AttributeConsumingService loadAttributeConsumingService(Map<String, Object> acsProps, int index) {
+		final String serviceName =  loadStringProperty(SP_ATTRIBUTE_CONSUMING_SERVICE_NAME_PROPERTY_KEY_SUFFIX, acsProps);
+		final String serviceDescription = loadStringProperty(SP_ATTRIBUTE_CONSUMING_SERVICE_DESCRIPTION_PROPERTY_KEY_SUFFIX, acsProps);
+		final String lang = loadStringProperty(SP_ATTRIBUTE_CONSUMING_SERVICE_LANG_PROPERTY_KEY_SUFFIX, acsProps);
+		final Boolean isDefault = loadBooleanProperty(SP_ATTRIBUTE_CONSUMING_SERVICE_DEFAULT_PROPERTY_KEY_SUFFIX, acsProps);
+		final AttributeConsumingService acs = new AttributeConsumingService(index, isDefault, serviceName, serviceDescription, lang);
+		// split properties into a map of properties
+		// key = attribute index; value = attribute properties
+		final SortedMap<Integer, Map<String, Object>> attributeProps = extractIndexedProperties(SP_ATTRIBUTE_CONSUMING_SERVICE_ATTRIBUTE_PROPERTY_KEY_PREFIX, acsProps);
+		// build attributes
+		attributeProps.forEach((attributeIndex, attributeData) -> {
+			acs.addRequestedAttribute(loadRequestedAttribute(attributeData));
+		});
+		return acs;
+	}
+	
+	/**
+	 * Loads a requested attribute from settings.
+	 * 
+	 * @param attributeProps
+	 *              a map containing the attribute settings
+	 * @return the loaded attribute
+	 */
+	private RequestedAttribute loadRequestedAttribute(Map<String, Object> attributeProps) {
+		final String name = loadStringProperty(SP_ATTRIBUTE_CONSUMING_SERVICE_ATTRIBUTE_NAME_PROPERTY_KEY_SUFFIX, attributeProps);
+		final String nameFormat = loadStringProperty(SP_ATTRIBUTE_CONSUMING_SERVICE_ATTRIBUTE_NAME_FORMAT_PROPERTY_KEY_SUFFIX, attributeProps);
+		final String friendlyName = loadStringProperty(SP_ATTRIBUTE_CONSUMING_SERVICE_ATTRIBUTE_FRIENDLY_NAME_PROPERTY_KEY_SUFFIX, attributeProps);
+		final Boolean required = loadBooleanProperty(SP_ATTRIBUTE_CONSUMING_SERVICE_ATTRIBUTE_REQUIRED_PROPERTY_KEY_SUFFIX, attributeProps);
+		// split properties into a map of properties
+		// key = value index; value = the actual value
+		final SortedMap<Integer, Object> values = extractIndexedValues(SP_ATTRIBUTE_CONSUMING_SERVICE_ATTRIBUTE_VALUE_PROPERTY_KEY_PREFIX, attributeProps);
+		final List<String> stringValues = values.values().stream()
+		            .map(value -> isString(value) ? StringUtils.trimToNull((String) value) : null)
+		            .filter(Objects::nonNull).collect(Collectors.toList());
+		return new RequestedAttribute(name, friendlyName, required, nameFormat, stringValues);
+	}
 
+	/**
+	 * Given a map containing settings data, extracts all the indexed properties
+	 * identified by a given prefix. The returned map has indexes as keys and a map
+	 * describing the extracted indexed data as values. Keys are sorted by their
+	 * natural order (i.e. iterating over the map will return entries in index order).
+	 * <p>
+	 * For instance, if the prefix is <code>foo</code>, all the following properties
+	 * will be extracted:
+	 * 
+	 * <pre>
+	 * foo[0].prop1=&lt;value1&gt;
+	 * foo[0].prop2=&lt;value2&gt;
+	 * foo[1].prop1=&lt;value3&gt;
+	 * </pre>
+	 * 
+	 * and the returned map will be:
+	 * 
+	 * <pre>
+	 * 0 => prop1=&lt;value1&gt;
+	 *      prop2=&lt;value2&gt;
+	 * 1 => prop1=&lt;value3&gt;
+	 * </pre>
+	 * 
+	 * The index is optional: if missing, "-1" is returned. In other words, in the
+	 * above example:
+	 * 
+	 * <pre>
+	 * foo.prop1=&lt;value1&gt;
+	 * foo.prop2=&lt;value2&gt;
+	 * </pre>
+	 * 
+	 * will be mapped to:
+	 * 
+	 * <pre>
+	 * -1 => prop1=&lt;value1&gt;
+	 *       prop2=&lt;value2&gt;
+	 * </pre>
+	 * 
+	 * Indices can be made of maximum 9 digits, to prevent overflows. Leading zeroes
+	 * are discarded.
+	 * 
+	 * @param prefix
+	 *              the prefix that identifies the indexed property to extract
+	 * @param data
+	 *              the input data
+	 * @return a map with extracted data for each identified index
+	 */
+	private SortedMap<Integer, Map<String, Object>> extractIndexedProperties(String prefix, Map<String, Object> data) {
+		final Pattern p = Pattern.compile(Pattern.quote(prefix) + 
+				"(?:\\[(\\d{1,9})\\])?\\.(.+)");
+		final SortedMap<Integer, Map<String, Object>> indexedProps = new TreeMap<>();
+		for(final Entry<String, Object> prop: data.entrySet()) {
+			final Matcher m = p.matcher(prop.getKey());
+			if(m.matches()) {
+				final String indexString = m.group(1);
+				final int index = indexString == null? -1: Integer.parseInt(indexString);
+				final String suffix = m.group(2);
+				Map<String, Object> props = indexedProps.get(index);
+				if(props == null) {
+					props = new HashMap<>();
+					indexedProps.put(index, props);
+				}
+				props.put(suffix, prop.getValue());
+			}
+		}
+		return indexedProps;
+	}
+	
+	/**
+	 * Given a map containing settings data, extracts all the indexed values
+	 * identified by a given prefix. The returned map has indexes as keys and the
+	 * corresponding values as values. Keys are sorted by their natural order 
+	 * (i.e. iterating over the map will return entries in index order).
+	 * <p>
+	 * For instance, if the prefix is <code>foo</code>, all the following values
+	 * will be extracted:
+	 * 
+	 * <pre>
+	 * foo[0]=&lt;value1&gt;
+	 * foo[1]=&lt;value2&gt;
+	 * foo[2]=&lt;value3&gt;
+	 * </pre>
+	 * 
+	 * and the returned map will be:
+	 * 
+	 * <pre>
+	 * 0 => &lt;value1&gt;
+	 * 1 => &lt;value2&gt;
+	 * 3 => &lt;value3&gt;
+	 * </pre>
+	 * 
+	 * The index is optional: if missing, "-1" is returned. In other words, in the
+	 * above example:
+	 * 
+	 * <pre>
+	 * foo=&lt;value1&gt;
+	 * </pre>
+	 * 
+	 * will be mapped to:
+	 * 
+	 * <pre>
+	 * -1 => &lt;value1&gt;
+	 * </pre>
+	 * 
+	 * Indices can be made of maximum 9 digits, to prevent overflows. Leading zeroes
+	 * are discarded.
+	 * 
+	 * @param prefix
+	 *              the prefix that identifies the indexed property to extract
+	 * @param data
+	 *              the input data
+	 * @return a map with extracted values for each identified index
+	 */
+	private SortedMap<Integer, Object> extractIndexedValues(String prefix, Map<String, Object> data) {
+		final Pattern p = Pattern.compile(Pattern.quote(prefix) + 
+				"(?:\\[(\\d{1,9})\\])?");
+		final SortedMap<Integer, Object> indexedValues = new TreeMap<>();
+		for(final Entry<String, Object> prop: data.entrySet()) {
+			final Matcher m = p.matcher(prop.getKey());
+			if(m.matches()) {
+				final String indexString = m.group(1);
+				final int index = indexString == null? -1: Integer.parseInt(indexString);
+				indexedValues.put(index, prop.getValue());
+			}
+		}
+		return indexedValues;
+	}
+	
 	/**
 	 * Loads the unique ID prefix. Uses default if property not set.
 	 */
@@ -508,6 +730,8 @@ public class SettingsBuilder {
 		if (spNameIDFormat != null && !spNameIDFormat.isEmpty()) {
 			saml2Setting.setSpNameIDFormat(spNameIDFormat);
 		}
+		
+		saml2Setting.setSpAttributeConsumingServices(loadAttributeConsumingServices());
 
 		boolean keyStoreEnabled = this.samlData.get(KEYSTORE_KEY) != null && this.samlData.get(KEYSTORE_ALIAS) != null
 				&& this.samlData.get(KEYSTORE_KEY_PASSWORD) != null;
@@ -548,7 +772,19 @@ public class SettingsBuilder {
 	 * @return the value
 	 */
 	private String loadStringProperty(String propertyKey) {
-		Object propValue = samlData.get(propertyKey);
+		return loadStringProperty(propertyKey, samlData);
+	}
+
+	/**
+	 * Loads a property of the type String from the specified data
+	 *
+	 * @param propertyKey the property name
+	 * @param data the input data
+	 *
+	 * @return the value
+	 */
+	private String loadStringProperty(String propertyKey, Map<String, Object> data) {
+		Object propValue = data.get(propertyKey);
 		if (isString(propValue)) {
 			return StringUtils.trimToNull((String) propValue);
 		}
@@ -563,7 +799,19 @@ public class SettingsBuilder {
 	 * @return the value
 	 */
 	private Boolean loadBooleanProperty(String propertyKey) {
-		Object propValue = samlData.get(propertyKey);
+		return loadBooleanProperty(propertyKey, samlData);
+	}
+
+	/**
+	 * Loads a property of the type Boolean from the specified data
+	 *
+	 * @param propertyKey the property name
+	 * @param data the input data
+	 *
+	 * @return the value
+	 */
+	private Boolean loadBooleanProperty(String propertyKey, Map<String, Object> data) {
+		Object propValue = data.get(propertyKey);
 		if (isString(propValue)) {
 			return Boolean.parseBoolean(((String) propValue).trim());
 		}
