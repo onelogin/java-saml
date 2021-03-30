@@ -436,7 +436,7 @@ public class MetadataTest {
 	 * @see com.onelogin.saml2.settings.Metadata#toAttributeConsumingServicesXml
 	 */
 	@Test
-	public void testToAttributeConsumingServiceXmlSingleACS() throws IOException, CertificateEncodingException, Error {
+	public void testToAttributeConsumingServiceXmlSingleService() throws IOException, CertificateEncodingException, Error {
 		Saml2Settings settings = getSettingFromAllProperties();
 
 		Metadata metadataObj = new Metadata(settings, null, null);
@@ -471,8 +471,8 @@ public class MetadataTest {
 	 * @see com.onelogin.saml2.settings.Metadata#toAttributeConsumingServicesXml
 	 */
 	@Test
-	public void testToAttributeConsumingServiceXmlMultiACS() throws IOException, CertificateEncodingException, Error {
-		Saml2Settings settings = getSettingFromAllPropertiesMultiACS();
+	public void testToAttributeConsumingServiceXmlMultiServices() throws IOException, CertificateEncodingException, Error {
+		Saml2Settings settings = getSettingFromAllPropertiesMultiAttributeConsumingServices();
 
 		Metadata metadataObj = new Metadata(settings, null, null);
 		String metadataStr = metadataObj.getMetadataString();
@@ -505,7 +505,7 @@ public class MetadataTest {
 		assertThat(metadataStr, containsString(reqAttr22Str));
 		assertThat(metadataStr, containsString(footer2Str));
 		
-		// properties for a single ACS must NOT be present in this case
+		// properties for a single Attribute Consuming Service must NOT be present in this case
 		String sNameStr = "<md:ServiceName xml:lang=\"en\">My service</md:ServiceName>";
 		String sDescStr = "<md:ServiceDescription xml:lang=\"en\">My service description</md:ServiceDescription>";
 		String reqAttr1Str = "<md:RequestedAttribute Name=\"Email_Wrong\" NameFormat=\"urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress\" FriendlyName=\"E-mail address\" isRequired=\"true\">";
@@ -602,7 +602,7 @@ public class MetadataTest {
 		return new SettingsBuilder().fromFile("config/config.all.properties").build();
 	}
 
-	private Saml2Settings getSettingFromAllPropertiesMultiACS() throws Error, IOException {
+	private Saml2Settings getSettingFromAllPropertiesMultiAttributeConsumingServices() throws Error, IOException {
 		return new SettingsBuilder().fromFile("config/config.all_multi_attribute_consuming_services.properties").build();
 	}
 
