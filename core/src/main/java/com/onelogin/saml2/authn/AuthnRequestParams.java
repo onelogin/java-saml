@@ -163,7 +163,7 @@ public class AuthnRequestParams {
 	/**
 	 * @return the selector to use to specify the Attribute Consuming Service index
 	 */
-	public AttributeConsumingServiceSelector getAttributeConsumingServiceSelector() {
+	protected AttributeConsumingServiceSelector getAttributeConsumingServiceSelector() {
 		return attributeConsumingServiceSelector;
 	}
 }

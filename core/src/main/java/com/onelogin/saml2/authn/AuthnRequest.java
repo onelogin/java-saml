@@ -52,9 +52,10 @@ public class AuthnRequest extends AuthnRequestParams {
 	 *
 	 * @param settings
 	 *            OneLogin_Saml2_Settings
+	 * @see #AuthnRequest(Saml2Settings, AuthnRequestParams)
 	 */
 	public AuthnRequest(Saml2Settings settings) {
-		this(settings, false, false, true);
+		this(settings, new AuthnRequestParams(false, false, true));
 	}
 
 	/**
