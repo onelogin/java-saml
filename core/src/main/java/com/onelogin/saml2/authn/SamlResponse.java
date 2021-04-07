@@ -39,13 +39,13 @@ import com.onelogin.saml2.util.Util;
  */
 public class SamlResponse {
 	/**
-     * Private property to construct a logger for this class.
-     */
+       * Private property to construct a logger for this class.
+       */
 	private static final Logger LOGGER = LoggerFactory.getLogger(SamlResponse.class);
 
 	/**
-     * Settings data.
-     */
+       * Settings data.
+       */
 	private final Saml2Settings settings;
 
 	/**
@@ -1238,5 +1238,14 @@ public class SamlResponse {
 		if (settings.isStrict() && !spNameQualifier.equals(settings.getSpEntityId())) {
 			throw new ValidationError("The SPNameQualifier value mismatch the SP entityID value.", ValidationError.SP_NAME_QUALIFIER_NAME_MISMATCH);
 		}
+	}
+
+	/**
+	 * Returns the SAML settings specified at construction time.
+	 * 
+	 * @return the SAML settings
+	 */
+	protected Saml2Settings getSettings() {
+		return settings;
 	}
 }

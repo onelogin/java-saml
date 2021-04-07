@@ -279,4 +279,13 @@ public class AuthnRequest {
 	{
 		return id;
 	}
+	
+	/**
+	 * Returns the SAML settings specified at construction time.
+	 * 
+	 * @return the SAML settings
+	 */
+	protected Saml2Settings getSettings() {
+		return settings;
+	}
 }

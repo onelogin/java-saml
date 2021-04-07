@@ -786,4 +786,13 @@ public class LogoutRequest {
 	{
 		return id;
 	}
+
+	/**
+	 * Returns the SAML settings specified at construction time.
+	 * 
+	 * @return the SAML settings
+	 */
+	protected Saml2Settings getSettings() {
+		return settings;
+	}
 }
