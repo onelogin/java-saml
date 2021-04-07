@@ -63,6 +63,11 @@ public class Metadata {
 	private final Integer cacheDuration;
 
 	/**
+       * Settings data.
+       */
+	private final Saml2Settings settings;
+
+	/**
 	 * Constructs the Metadata object.
 	 *
 	 * @param settings                  Saml2Settings object. Setting data
@@ -72,12 +77,13 @@ public class Metadata {
 	 * @throws CertificateEncodingException
 	 */
 	public Metadata(Saml2Settings settings, Calendar validUntilTime, Integer cacheDuration, AttributeConsumingService attributeConsumingService) throws CertificateEncodingException {
+		this.settings = settings;
 		this.validUntilTime = validUntilTime;
 		this.attributeConsumingService = attributeConsumingService;
 		this.cacheDuration = cacheDuration;
 
 		StrSubstitutor substitutor = generateSubstitutor(settings);
-		String unsignedMetadataString = substitutor.replace(getMetadataTemplate());
+		String unsignedMetadataString = postProcessXml(substitutor.replace(getMetadataTemplate()));
 
 		LOGGER.debug("metadata --> " + unsignedMetadataString);
 		metadataString = unsignedMetadataString;
@@ -102,17 +108,35 @@ public class Metadata {
 	 * @throws CertificateEncodingException
 	 */
 	public Metadata(Saml2Settings settings) throws CertificateEncodingException {
-
+		this.settings = settings;
 		this.validUntilTime = Calendar.getInstance();
 		this.validUntilTime.add(Calendar.DAY_OF_YEAR, N_DAYS_VALID_UNTIL);
 
 		this.cacheDuration = SECONDS_CACHED;
 
 		StrSubstitutor substitutor = generateSubstitutor(settings);
-		String unsignedMetadataString = substitutor.replace(getMetadataTemplate());
+		String unsignedMetadataString = postProcessXml(substitutor.replace(getMetadataTemplate()));
 
 		LOGGER.debug("metadata --> " + unsignedMetadataString);
 		metadataString = unsignedMetadataString;
+	}
+	
+	/**
+	 * Allows for an extension class to post-process the SAML metadata XML generated
+	 * for this metadata instance, in order to customize the result.
+	 * <p>
+	 * This method is invoked at construction time, after all the other fields of
+	 * this class have already been initialised. Its default implementation simply
+	 * returns the input XML as-is, with no change.
+	 * 
+	 * @param metadataXml
+	 *              the XML produced for this metadata instance by the standard
+	 *              implementation provided by {@link Metadata}
+	 * @return the post-processed XML for this metadata instance, which will then be
+	 *         returned by any call to {@link #getMetadataString()}
+	 */
+	protected String postProcessXml(final String metadataXml) {
+		return metadataXml;
 	}
 
 	/**
@@ -388,5 +412,14 @@ public class Metadata {
 		String signedMetadata = Util.addSign(metadataDoc, key, cert, signAlgorithm, digestAlgorithm);
 		LOGGER.debug("Signed metadata --> " + signedMetadata);
 		return signedMetadata;
+	}
+	
+	/**
+	 * Returns the SAML settings specified at construction time.
+	 * 
+	 * @return the SAML settings
+	 */
+	protected Saml2Settings getSettings() {
+		return settings;
 	}
 }

@@ -141,7 +141,7 @@ public class LogoutRequest {
 			this.sessionIndex = sessionIndex;
 	
 			StrSubstitutor substitutor = generateSubstitutor(settings);
-			logoutRequestString = substitutor.replace(getLogoutRequestTemplate());
+			logoutRequestString = postProcessXml(substitutor.replace(getLogoutRequestTemplate()));
 		} else {
 			logoutRequestString = Util.base64decodedInflated(samlLogoutRequest);
 			id = getId(logoutRequestString);
@@ -232,6 +232,26 @@ public class LogoutRequest {
 	 */
 	public LogoutRequest(Saml2Settings settings, HttpRequest request) throws XMLEntityException {
 		this(settings, request, null, null);
+	}
+
+	/**
+	 * Allows for an extension class to post-process the LogoutRequest XML generated
+	 * for this request, in order to customize the result.
+	 * <p>
+	 * This method is invoked at construction time when no existing LogoutRequest
+	 * message is found in the HTTP request (and hence in the logout request sending
+	 * scenario only), after all the other fields of this class have already been
+	 * initialised. Its default implementation simply returns the input XML as-is,
+	 * with no change.
+	 * 
+	 * @param logoutRequestXml
+	 *              the XML produced for this LogoutRequest by the standard
+	 *              implementation provided by {@link LogoutRequest}
+	 * @return the post-processed XML for this LogoutRequest, which will then be
+	 *         returned by any call to {@link #getLogoutRequestXml()}
+	 */
+	protected String postProcessXml(final String logoutRequestXml) {
+		return logoutRequestXml;
 	}
 
 	/**
@@ -765,5 +785,14 @@ public class LogoutRequest {
 	public String getId()
 	{
 		return id;
+	}
+
+	/**
+	 * Returns the SAML settings specified at construction time.
+	 * 
+	 * @return the SAML settings
+	 */
+	protected Saml2Settings getSettings() {
+		return settings;
 	}
 }
