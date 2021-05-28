@@ -11,7 +11,10 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.onelogin.saml2.authn.AttributeConsumingServiceSelector;
 import com.onelogin.saml2.authn.AuthnRequest;
+import com.onelogin.saml2.authn.AuthnRequestParams;
+import com.onelogin.saml2.model.AttributeConsumingService;
 import com.onelogin.saml2.settings.Saml2Settings;
 import com.onelogin.saml2.settings.SettingsBuilder;
 import com.onelogin.saml2.util.Util;
@@ -133,13 +136,13 @@ public class AuthnRequestTest {
 		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
 		assertThat(authnRequestStr, not(containsString("ForceAuthn=\"true\"")));
 
-		authnRequest = new AuthnRequest(settings, false, false, false);
+		authnRequest = new AuthnRequest(settings, new AuthnRequestParams(false, false, false));
 		authnRequestStringBase64 = authnRequest.getEncodedAuthnRequest();
 		authnRequestStr = Util.base64decodedInflated(authnRequestStringBase64);		
 		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
 		assertThat(authnRequestStr, not(containsString("ForceAuthn=\"true\"")));		
 
-		authnRequest = new AuthnRequest(settings, true, false, false);
+		authnRequest = new AuthnRequest(settings, new AuthnRequestParams(true, false, false));
 		authnRequestStringBase64 = authnRequest.getEncodedAuthnRequest();
 		authnRequestStr = Util.base64decodedInflated(authnRequestStringBase64);		
 		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
@@ -164,13 +167,13 @@ public class AuthnRequestTest {
 		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
 		assertThat(authnRequestStr, not(containsString("IsPassive=\"true\"")));
 
-		authnRequest = new AuthnRequest(settings, false, false, false);
+		authnRequest = new AuthnRequest(settings, new AuthnRequestParams(false, false, false));
 		authnRequestStringBase64 = authnRequest.getEncodedAuthnRequest();
 		authnRequestStr = Util.base64decodedInflated(authnRequestStringBase64);		
 		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
 		assertThat(authnRequestStr, not(containsString("IsPassive=\"true\"")));		
 
-		authnRequest = new AuthnRequest(settings, false, true, false);
+		authnRequest = new AuthnRequest(settings, new AuthnRequestParams(false, true, false));
 		authnRequestStringBase64 = authnRequest.getEncodedAuthnRequest();
 		authnRequestStr = Util.base64decodedInflated(authnRequestStringBase64);		
 		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
@@ -196,13 +199,13 @@ public class AuthnRequestTest {
 		assertThat(authnRequestStr, containsString("<samlp:NameIDPolicy"));
 		assertThat(authnRequestStr, containsString("Format=\"urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified\""));
 
-		authnRequest = new AuthnRequest(settings, false, false, false);
+		authnRequest = new AuthnRequest(settings, new AuthnRequestParams(false, false, false));
 		authnRequestStringBase64 = authnRequest.getEncodedAuthnRequest();
 		authnRequestStr = Util.base64decodedInflated(authnRequestStringBase64);		
 		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
 		assertThat(authnRequestStr, not(containsString("<samlp:NameIDPolicy")));		
 
-		authnRequest = new AuthnRequest(settings, false, false, true);
+		authnRequest = new AuthnRequest(settings, new AuthnRequestParams(false, false, true));
 		authnRequestStringBase64 = authnRequest.getEncodedAuthnRequest();
 		authnRequestStr = Util.base64decodedInflated(authnRequestStringBase64);		
 		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
@@ -290,7 +293,7 @@ public class AuthnRequestTest {
 		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
 		assertThat(authnRequestStr, not(containsString("<saml:Subject")));
 
-		authnRequest = new AuthnRequest(settings, false, false, false, "testuser@example.com");
+		authnRequest = new AuthnRequest(settings, new AuthnRequestParams(false, false, false, "testuser@example.com"));
 		authnRequestStringBase64 = authnRequest.getEncodedAuthnRequest();
 		authnRequestStr = Util.base64decodedInflated(authnRequestStringBase64);
 		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
@@ -299,13 +302,64 @@ public class AuthnRequestTest {
 		assertThat(authnRequestStr, containsString("<saml:SubjectConfirmation Method=\"urn:oasis:names:tc:SAML:2.0:cm:bearer\">"));
 
 		settings = new SettingsBuilder().fromFile("config/config.emailaddressformat.properties").build();
-		authnRequest = new AuthnRequest(settings, false, false, false, "testuser@example.com");
+		authnRequest = new AuthnRequest(settings, new AuthnRequestParams(false, false, false, "testuser@example.com"));
 		authnRequestStringBase64 = authnRequest.getEncodedAuthnRequest();
 		authnRequestStr = Util.base64decodedInflated(authnRequestStringBase64);
 		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
 		assertThat(authnRequestStr, containsString("<saml:Subject"));
 		assertThat(authnRequestStr, containsString("Format=\"urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress\">testuser@example.com</saml:NameID>"));
 		assertThat(authnRequestStr, containsString("<saml:SubjectConfirmation Method=\"urn:oasis:names:tc:SAML:2.0:cm:bearer\">"));
+	}
+
+	/**
+	 * Tests the AuthnRequest Constructor
+	 * The creation of a deflated SAML Request with the index of the desired Attribute Consuming Service
+	 *
+	 * @throws Exception
+	 *
+	 * @see com.onelogin.saml2.authn.AuthnRequest
+	 */
+	@Test
+	public void testAttributeConsumingServiceSelector() throws Exception {
+		Saml2Settings settings = new SettingsBuilder().fromFile("config/config.min_multi_attribute_consuming_services.properties").build();
+
+		AuthnRequest authnRequest = new AuthnRequest(settings);
+		String authnRequestStringBase64 = authnRequest.getEncodedAuthnRequest();
+		String authnRequestStr = Util.base64decodedInflated(authnRequestStringBase64);
+		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
+		assertThat(authnRequestStr, not(containsString("AttributeConsumingServiceIndex=\"")));
+
+		// use default
+		authnRequest = new AuthnRequest(settings, new AuthnRequestParams(false, false, false, 
+				AttributeConsumingServiceSelector.useDefault()));
+		authnRequestStringBase64 = authnRequest.getEncodedAuthnRequest();
+		authnRequestStr = Util.base64decodedInflated(authnRequestStringBase64);		
+		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
+		assertThat(authnRequestStr, not(containsString("AttributeConsumingServiceIndex=\"")));		
+
+		// by index
+		authnRequest = new AuthnRequest(settings, new AuthnRequestParams(false, false, false, 
+				AttributeConsumingServiceSelector.byIndex(0)));
+		authnRequestStringBase64 = authnRequest.getEncodedAuthnRequest();
+		authnRequestStr = Util.base64decodedInflated(authnRequestStringBase64);		
+		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
+		assertThat(authnRequestStr, containsString("AttributeConsumingServiceIndex=\"0\""));
+		
+		// by service name
+		authnRequest = new AuthnRequest(settings, new AuthnRequestParams(false, false, false, 
+				AttributeConsumingServiceSelector.byServiceName(settings, "Anagrafica")));
+		authnRequestStringBase64 = authnRequest.getEncodedAuthnRequest();
+		authnRequestStr = Util.base64decodedInflated(authnRequestStringBase64);		
+		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
+		assertThat(authnRequestStr, containsString("AttributeConsumingServiceIndex=\"1\""));
+		
+		// use service
+		authnRequest = new AuthnRequest(settings, new AuthnRequestParams(false, false, false, 
+				AttributeConsumingServiceSelector.use(new AttributeConsumingService(2, false, "Test", null, null))));
+		authnRequestStringBase64 = authnRequest.getEncodedAuthnRequest();
+		authnRequestStr = Util.base64decodedInflated(authnRequestStringBase64);		
+		assertThat(authnRequestStr, containsString("<samlp:AuthnRequest"));
+		assertThat(authnRequestStr, containsString("AttributeConsumingServiceIndex=\"2\""));
 	}
 
 	/**

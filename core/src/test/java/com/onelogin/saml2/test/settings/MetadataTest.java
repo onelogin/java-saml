@@ -296,15 +296,59 @@ public class MetadataTest {
 	}
 
 	/**
-	 * Tests the getAttributeConsumingServiceXml method of Metadata
+	 * Tests the toAttributeConsumingServicesXml method of Metadata when an Attribute Consuming Service
+	 * is specified at construction time
 	 *
 	 * @throws IOException
 	 * @throws CertificateEncodingException
 	 * @throws Error
-	 * @see com.onelogin.saml2.settings.Metadata#getAttributeConsumingServiceXml
+	 * @see com.onelogin.saml2.settings.Metadata#toAttributeConsumingServicesXml
 	 */
 	@Test
-	public void testGetAttributeConsumingServiceXml() throws IOException, CertificateEncodingException, Error {
+	public void testToAttributeConsumingServicesXmlLegacy() throws IOException, CertificateEncodingException, Error {
+		Saml2Settings settings = getSettingFromAllProperties();
+
+		AttributeConsumingService attributeConsumingService = new AttributeConsumingService(0, true, "Test Service", "Test Service Desc", "en");
+		RequestedAttribute requestedAttribute = new RequestedAttribute("Email", "Email", true, "urn:oasis:names:tc:SAML:2.0:attrname-format:uri", null);
+		RequestedAttribute requestedAttribute2 = new RequestedAttribute("FirstName", null, true, "urn:oasis:names:tc:SAML:2.0:attrname-format:uri", null);
+		RequestedAttribute requestedAttribute3 = new RequestedAttribute("LastName", null, true, "urn:oasis:names:tc:SAML:2.0:attrname-format:uri", null);
+
+		attributeConsumingService.addRequestedAttribute(requestedAttribute);
+		attributeConsumingService.addRequestedAttribute(requestedAttribute2);
+		attributeConsumingService.addRequestedAttribute(requestedAttribute3);
+
+		Metadata metadataObj = new Metadata(settings, null, null, attributeConsumingService);
+		String metadataStr = metadataObj.getMetadataString();
+
+		String headerStr = "<md:AttributeConsumingService index=\"0\" isDefault=\"true\">";
+		String sNameStr = "<md:ServiceName xml:lang=\"en\">Test Service</md:ServiceName>";
+		String sDescStr = "<md:ServiceDescription xml:lang=\"en\">Test Service Desc</md:ServiceDescription>";
+		String reqAttr1Str = "<md:RequestedAttribute Name=\"Email\" NameFormat=\"urn:oasis:names:tc:SAML:2.0:attrname-format:uri\" FriendlyName=\"Email\" isRequired=\"true\" />";
+		String reqAttr2Str = "<md:RequestedAttribute Name=\"FirstName\" NameFormat=\"urn:oasis:names:tc:SAML:2.0:attrname-format:uri\" isRequired=\"true\" />";
+		String reqAttr3Str = "<md:RequestedAttribute Name=\"LastName\" NameFormat=\"urn:oasis:names:tc:SAML:2.0:attrname-format:uri\" isRequired=\"true\" />";
+		String footerStr = "</md:AttributeConsumingService>";
+
+		assertThat(metadataStr, containsString(headerStr));
+		assertThat(metadataStr, containsString(sNameStr));
+		assertThat(metadataStr, containsString(sDescStr));
+		assertThat(metadataStr, containsString(reqAttr1Str));
+		assertThat(metadataStr, containsString(reqAttr2Str));
+		assertThat(metadataStr, containsString(reqAttr3Str));
+		assertThat(metadataStr, containsString(footerStr));
+	}
+
+	/**
+	 * Tests the toAttributeConsumingServicesXml method of Metadata when an Attribute Consuming Service
+	 * is specified at construction time
+	 * Case: Single non-default AttributeConsumingService with no explicit index 
+	 *
+	 * @throws IOException
+	 * @throws CertificateEncodingException
+	 * @throws Error
+	 * @see com.onelogin.saml2.settings.Metadata#toAttributeConsumingServicesXml
+	 */
+	@Test
+	public void testToAttributeConsumingServiceXmlNoIndexLegacy() throws IOException, CertificateEncodingException, Error {
 		Saml2Settings settings = getSettingFromAllProperties();
 
 		AttributeConsumingService attributeConsumingService = new AttributeConsumingService("Test Service", "Test Service Desc");
@@ -337,19 +381,20 @@ public class MetadataTest {
 	}
 
 	/**
-	 * Tests the getAttributeConsumingServiceXml method of Metadata
+	 * Tests the toAttributeConsumingServicesXml method of Metadata when an Attribute Consuming Service
+	 * is specified at construction time
 	 * Case: AttributeConsumingService Multiple AttributeValue
 	 *
 	 * @throws IOException
 	 * @throws CertificateEncodingException
 	 * @throws Error
-	 * @see com.onelogin.saml2.settings.Metadata#getAttributeConsumingServiceXml
+	 * @see com.onelogin.saml2.settings.Metadata#toAttributeConsumingServicesXml
 	 */
 	@Test
-	public void testGetAttributeConsumingServiceXmlWithMultipleAttributeValue() throws IOException, CertificateEncodingException, Error {
+	public void testToAttributeConsumingServiceXmlWithMultipleAttributeValueLegacy() throws IOException, CertificateEncodingException, Error {
 		Saml2Settings settings = getSettingFromAllProperties();
 
-		AttributeConsumingService attributeConsumingService = new AttributeConsumingService("Test Service", "Test Service Desc");
+		AttributeConsumingService attributeConsumingService = new AttributeConsumingService(0, true, "Test Service", "Test Service Desc", "en");
 		List<String> attrValues = new ArrayList<String>();
 		attrValues.add("userType");
 		attrValues.add("admin");
@@ -362,7 +407,7 @@ public class MetadataTest {
 		Metadata metadataObj = new Metadata(settings, null, null, attributeConsumingService);
 		String metadataStr = metadataObj.getMetadataString();
 
-		String headerStr = "<md:AttributeConsumingService index=\"1\">";
+		String headerStr = "<md:AttributeConsumingService index=\"0\" isDefault=\"true\">";
 		String sNameStr = "<md:ServiceName xml:lang=\"en\">Test Service</md:ServiceName>";
 		String sDescStr = "<md:ServiceDescription xml:lang=\"en\">Test Service Desc</md:ServiceDescription>";
 		String reqAttr1Str = "<md:RequestedAttribute Name=\"userType\" NameFormat=\"urn:oasis:names:tc:SAML:2.0:attrname-format:basic\" isRequired=\"false\">";
@@ -379,6 +424,101 @@ public class MetadataTest {
 		assertThat(metadataStr, containsString(reqAttr1Attr2Str));
 		assertThat(metadataStr, containsString(reqAttr2Str));
 		assertThat(metadataStr, containsString(footerStr));
+	}
+
+	/**
+	 * Tests the toAttributeConsumingServicesXml method of Metadata
+	 * Case: single Attribute Consuming Service specified in settings
+	 *
+	 * @throws IOException
+	 * @throws CertificateEncodingException
+	 * @throws Error
+	 * @see com.onelogin.saml2.settings.Metadata#toAttributeConsumingServicesXml
+	 */
+	@Test
+	public void testToAttributeConsumingServiceXmlSingleService() throws IOException, CertificateEncodingException, Error {
+		Saml2Settings settings = getSettingFromAllProperties();
+
+		Metadata metadataObj = new Metadata(settings, null, null);
+		String metadataStr = metadataObj.getMetadataString();
+
+		String headerStr = "<md:AttributeConsumingService index=\"1\">";
+		String sNameStr = "<md:ServiceName xml:lang=\"en\">My service</md:ServiceName>";
+		String sDescStr = "<md:ServiceDescription xml:lang=\"en\">My service description</md:ServiceDescription>";
+		String reqAttr1Str = "<md:RequestedAttribute Name=\"Email\" NameFormat=\"urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress\" FriendlyName=\"E-mail address\" isRequired=\"true\">";
+		String reqAttr1Atr1Str = "<saml:AttributeValue xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">foo@example.org</saml:AttributeValue>";
+		String reqAttr1Attr2Str = "<saml:AttributeValue xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">bar@example.org</saml:AttributeValue>";
+		String reqAttr2Str = "<md:RequestedAttribute Name=\"FirstName\" />";
+		String footerStr = "</md:AttributeConsumingService>";
+
+		assertThat(metadataStr, containsString(headerStr));
+		assertThat(metadataStr, containsString(sNameStr));
+		assertThat(metadataStr, containsString(sDescStr));
+		assertThat(metadataStr, containsString(reqAttr1Str));
+		assertThat(metadataStr, containsString(reqAttr1Atr1Str));
+		assertThat(metadataStr, containsString(reqAttr1Attr2Str));
+		assertThat(metadataStr, containsString(reqAttr2Str));
+		assertThat(metadataStr, containsString(footerStr));
+	}
+
+	/**
+	 * Tests the toAttributeConsumingServicesXml method of Metadata
+	 * Case: single Attribute Consuming Service specified in settings
+	 *
+	 * @throws IOException
+	 * @throws CertificateEncodingException
+	 * @throws Error
+	 * @see com.onelogin.saml2.settings.Metadata#toAttributeConsumingServicesXml
+	 */
+	@Test
+	public void testToAttributeConsumingServiceXmlMultiServices() throws IOException, CertificateEncodingException, Error {
+		Saml2Settings settings = getSettingFromAllPropertiesMultiAttributeConsumingServices();
+
+		Metadata metadataObj = new Metadata(settings, null, null);
+		String metadataStr = metadataObj.getMetadataString();
+
+		String header1Str = "<md:AttributeConsumingService index=\"0\">";
+		String sName1Str = "<md:ServiceName xml:lang=\"en\">Just e-mail</md:ServiceName>";
+		String reqAttr11Str = "<md:RequestedAttribute Name=\"Email\" NameFormat=\"urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress\" FriendlyName=\"E-mail address\" isRequired=\"true\">";
+		String reqAttr11Atr1Str = "<saml:AttributeValue xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">foo@example.org</saml:AttributeValue>";
+		String reqAttr11Attr2Str = "<saml:AttributeValue xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">bar@example.org</saml:AttributeValue>";
+		String footer1Str = "</md:AttributeConsumingService>";
+
+		String header2Str = "<md:AttributeConsumingService index=\"1\" isDefault=\"true\">";
+		String sName2Str = "<md:ServiceName xml:lang=\"it\">Anagrafica</md:ServiceName>";
+		String sDesc2Str = "<md:ServiceDescription xml:lang=\"it\">Servizio completo</md:ServiceDescription>";
+		String reqAttr21Str = "<md:RequestedAttribute Name=\"FirstName\" />";
+		String reqAttr22Str = "<md:RequestedAttribute Name=\"LastName\" isRequired=\"true\" />";
+		String footer2Str = "</md:AttributeConsumingService>";
+
+		assertThat(metadataStr, containsString(header1Str));
+		assertThat(metadataStr, containsString(sName1Str));
+		assertThat(metadataStr, containsString(reqAttr11Str));
+		assertThat(metadataStr, containsString(reqAttr11Atr1Str));
+		assertThat(metadataStr, containsString(reqAttr11Attr2Str));
+		assertThat(metadataStr, containsString(footer1Str));
+
+		assertThat(metadataStr, containsString(header2Str));
+		assertThat(metadataStr, containsString(sName2Str));
+		assertThat(metadataStr, containsString(sDesc2Str));
+		assertThat(metadataStr, containsString(reqAttr21Str));
+		assertThat(metadataStr, containsString(reqAttr22Str));
+		assertThat(metadataStr, containsString(footer2Str));
+		
+		// properties for a single Attribute Consuming Service must NOT be present in this case
+		String sNameStr = "<md:ServiceName xml:lang=\"en\">My service</md:ServiceName>";
+		String sDescStr = "<md:ServiceDescription xml:lang=\"en\">My service description</md:ServiceDescription>";
+		String reqAttr1Str = "<md:RequestedAttribute Name=\"Email_Wrong\" NameFormat=\"urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress\" FriendlyName=\"E-mail address\" isRequired=\"true\">";
+		String reqAttr1Atr1Str = "<saml:AttributeValue xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">foo_wrong@example.org</saml:AttributeValue>";
+		String reqAttr1Attr2Str = "<saml:AttributeValue xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">bar_wrong@example.org</saml:AttributeValue>";
+		String reqAttr2Str = "<md:RequestedAttribute Name=\"FirstName_Wrong\" />";
+
+		assertThat(metadataStr, not(containsString(sNameStr)));
+		assertThat(metadataStr, not(containsString(sDescStr)));
+		assertThat(metadataStr, not(containsString(reqAttr1Str)));
+		assertThat(metadataStr, not(containsString(reqAttr1Atr1Str)));
+		assertThat(metadataStr, not(containsString(reqAttr1Attr2Str)));
+		assertThat(metadataStr, not(containsString(reqAttr2Str)));
 	}
 
 	/**
@@ -460,6 +600,10 @@ public class MetadataTest {
 
 	private Saml2Settings getSettingFromAllProperties() throws Error, IOException {
 		return new SettingsBuilder().fromFile("config/config.all.properties").build();
+	}
+
+	private Saml2Settings getSettingFromAllPropertiesMultiAttributeConsumingServices() throws Error, IOException {
+		return new SettingsBuilder().fromFile("config/config.all_multi_attribute_consuming_services.properties").build();
 	}
 
 	@Test
